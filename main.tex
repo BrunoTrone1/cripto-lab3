@@ -1,0 +1,255 @@
+\documentclass[letter,12pt]{article}
+\usepackage[paperheight=27.94cm,paperwidth=21.59cm,bindingoffset=0in,left=3cm,right=2.0cm, top=3.5cm,bottom=2.5cm, headheight=200pt, headsep=1.0\baselineskip]{geometry}
+\usepackage{graphicx,lastpage}
+\usepackage{upgreek}
+\usepackage{censor}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{pdfpages}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{adjustbox}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{rotating}
+\usepackage{multirow}
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{hyperref}
+
+\renewcommand{\tablename}{Tabla}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+\fancyhead[L]{}
+%
+\begin{document}
+%
+   \title{\Huge{Informe Laboratorio 3}}
+
+   \author{\textbf{Sección 2} \\  \\Alumno Bruno Rosales \\ e-mail: bruno.rosales@mail.udp.cl}
+          
+   \date{Octubre de 2025}
+
+   \maketitle
+   
+   \tableofcontents
+ 
+  \newpage
+  
+
+\section{Descripción de actividades}
+Su objetivo será auditar la implementación de algoritmos hash aplicados a contraseñas en páginas web desde el lado del cliente, así como evaluar la efectividad de estas medidas contra ataques de tipo Pass the Hash (PtH). Para llevar a cabo esta auditoría, deberá registrarse en un sitio web y crear una cuenta, ingresando una contraseña específica para realizar las pruebas.\par
+
+Al concluir la tarea, es importante que modifique su contraseña por una diferente para garantizar su seguridad.\par
+
+Dado que la cantidad de sitios chilenos que utilizan hash es limitada, se permite realizar esta tarea en cualquier sitio web a nivel mundial. En este sentido, realice las siguientes actividades:
+
+
+\begin{itemize}
+    \item Identificación del algoritmo de hash utilizado para las contraseñas al momento del registro en el sitio.
+    
+    \item Identificación del algoritmo de hash utilizado para las contraseñas al momento de iniciar sesión.
+
+    \item Generación del hash de la contraseña desde la consola del navegador, partiendo de la contraseña en texto plano.
+
+    \item Interceptación del tráfico de login utilizando BurpSuite desde su equipo.
+
+    \item Realización de un intento de login modificando la contraseña por una incorrecta haciendo uso del hash obtenido en el punto anterior. Puede interceptar el tráfico y modificar el hash por el correcto o hacer uso del servicio repeater de BurpSuite.
+
+    \item Descripción de las políticas de privacidad o seguridad relacionadas con las contraseñas, incluyendo un enlace a las mismas.
+
+    \item Cuatro conclusiones sobre la seguridad o vulnerabilidad de la implementación observada.
+    
+\end{itemize}
+
+\section{Desarrollo de actividades según criterio de rúbrica}
+% URL busqueda: https://publicwww.com/websites/md5/
+
+% URL sitio: https://www.moneycontrol.com/
+
+% Credenciales: gmail=brunotrone12345@gmail.com password=Contr@generica12345
+
+% hash al registrarce 32 de largo SHA-1: psw:81b2e4f296ea6b696851199d4dd66eaa0abc6f5d
+
+% cpsw:81b2e4f296ea6b696851199d4dd66eaa0abc6f5d
+
+\subsection{Identifica el algoritmo de hash utilizado al momento de registrarse en el sitio}
+El primer paso para encontrar un sitio para probar hash es utilizar \href{https://publicwww.com/websites/}{publicwww}, el cual es un motor de búsqueda de código fuente web. Se opta por buscar MD5 en este sitio, un algoritmo de hash de 16 bytes, ya que es bastante antiguo y fácil de detectar.
+
+Se opta por el sitio \href{https://www.moneycontrol.com/}{moneycontrol.com}, ya que es el único que coincide en tener un sistema de registro e ingreso, estar disponible en inglés por defecto (hay muchos sitios en ruso, chino y koreano), ser SFW (Safe For Work) y además de mostrar que contiene MD5 ('MD5=...'). Esto se aprecia en la siguiente Figura \ref{fig:busqueda md5}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Actividad 1/busqueda md5.png}
+    \caption{Busqueda del algoritmo de cifrado MD5 mediante el sitio 'publicwww'. Se aprecian múltiples sitios y destacado, 'moneycontrol.com', el sitio elegido.}
+    \label{fig:busqueda md5}
+\end{figure}
+
+Posteriormente, se procede al proceso de registrarse con una cuenta, utilizando las credenciales 'brunotrone12345@gmail.com' como gmail y 'Contr@generica12345' como contraseña. Esto se hace mientras se utiliza la herramienta de desarrollador de red desde el navegador, lo que permite captar el tráfico. 
+
+El primer resultado es una solicitud que verifica si el usuario (correo) ya existe en el sistema, como se aprecia en la Figura \ref{fig:check del correo}. Esto no se encuentra cifrado, lo cual puede conllevar fallas de seguridad.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Actividad 1/check del correo.png}
+    \caption{Tráfico captado al registrarse con el correo. Se puede apreciar que no se le aplica ningun algoritmo de cifrado.}
+    \label{fig:check del correo}
+\end{figure}
+
+El segundo resultado es el más relevante. Luego de completar el proceso de registro en el sitio, se logra captar con las herramientas de desarrollador de red desde el navegador el tráfico de la solicitud. En este caso, se tiene el correo sin cifrado, lo cual es un riesgo de seguridad. Por parte de la contraseña, se encuentra cifrada: '81b2e4f296ea6b696851199d4dd66eaa0abc6f5d', pero no en MD5 como se esperaba, sino que en SHA-1. Esto se deduce por la longitud característica de este algoritmo, 40 hexadecimales. Esto se aprecia en la Figura \ref{fig:SHA-1 hash registro}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Actividad 1/SHA-1 hash registro.png}
+    \caption{Tráfico captado al registrarse con el correo y contraseña. Se puede apreciar que no se le aplica ningun algoritmo de cifrado al correo, sin embargo, la contraseña y la confirmación de la contraseña se encuentran cifradas.}
+    \label{fig:SHA-1 hash registro}
+\end{figure}
+
+Para verificar esto, se opta por utilizar otra herramienta de desarrollador del navegador; en este caso, la consola. Desde aquí, se pueden estimular las funciones de Javascript del sitio. En este caso se logro estimular la función del algoritmo de cifrado 'SHA-1' con la contraseña utilizada en el registro, obteniendo el mismo hash captado:
+
+\begin{itemize}
+    \item '81b2e4f296ea6b696851199d4dd66eaa0abc6f5d'
+\end{itemize}
+
+Esto se ve en detalle en la Figura \ref{fig:busqueda md5}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Actividad 1/funcion SHA1.png}
+    \caption{Función Javascript 'SHA-1' estimulada desde consola en el navegador. Se aprecia el mismo hash capturado en el proceso de registro.}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Identifica el algoritmo de hash utilizado al momento de iniciar sesión}
+El proceso para identificar el algoritmo de ingreso de sesión es el mismo que el de registro.
+
+Para esto se capta el tráfico desde la parte de ingreso de sesión de la página web. Se utilizan las credenciales 'brunotrone12345@gmail.com' como gmail y 'Contr@generica12345' como contraseña. Luego de un ingreso correcto, se logra capturar el tráfico de la solicitud enviada, obteniendo el campo de correo (sin cifrar, al igual que en el caso del registro) y el campo de la contraseña (como 'pwd') cifrada en SHA-1:  '81b2e4f296ea...'. Los resultados se pueden apreciar en la Figura \ref{fig:hash login}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Actividad 2/hash login.png}
+    \caption{Tráfico captado al ingresar con el correo y contraseña. Se puede apreciar que no se le aplica ningún algoritmo de cifrado al correo, sin embargo, la contraseña se encuentra cifrada.}
+    \label{fig:hash login}
+\end{figure}
+
+Para verificar esto se hace uso del mismo metodo, estimulación de la función Javascript 'SHA-1' detectada. En este caso, coincide el hash capturado con el hash generado por el algoritmo SHA-1, por lo que se comprueba la presencia de este metodo de cifrado. Se puede ver en la Figura \ref{fig:SHA-1 hash registro} el resultado obtenido.
+
+\subsection{Genera el hash de la contraseña desde la consola del navegador}
+Para generar el hash, se utiliza el metodo que se viene usando desde la primera actividad. En primera instancia se comprueba la existencia de alguna función existente de cifrado (SHA-1, SHA-256, MD5) mediante su nombre en la consola. Esto permite saber si existe la función y llamarla. 
+En el caso de SHA-1, como la función 'SHA-1', se detecta una función por consola, con el parámetro de 'msg' como input de la función. Esto es una mala práctica, ya que siempre se han de ofuscar las funciones relevantes a usar en el código. Sin embargo, esto es de utilidad para la actividad, por lo que se utiliza como se puede apreciar la Figura \ref{fig:SHA1-2}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Actividad 3/SHA 1.png}
+    \caption{Función detectada 'SHA-1' al buscar por la consola del navegador distintos algoritmos de cifrado.}
+    \label{fig:SHA1-2}
+\end{figure}
+
+Esto nos da como resultado el hash obtenido en la actividad 2.1 y 2.2: '81b2e4f296e...'. Este hash es una salida de la función estimulada con el 'msg' como 'Contr@generica12345', y al coincidir nos esta indicando que se obtuvo de manera exitosa el hash de la contraseña mediante la consola. El resultado se ve en la Figura \ref{fig:SHA-1-2}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Actividad 3/funcion SHA1-2.png}
+    \caption{Función estimulada con la contraseña usada, mediante la consola del navegador. Se observa como se obtiene el mismo hash que el capturado en actividades previas.}
+    \label{fig:SHA-1-2}
+\end{figure}
+
+\subsection{Intercepta el tráfico login con BurpSuite}
+Para interceptar tráfico del ingreso en el sitio 'moneycontrol.com', se utiliza BurpSuite, una herramienta para identificar y analizar vulnerabilidades, usada en actividades anteriores. Específicamente, se utiliza el navegador que provee, la herramienta de historial HTTP para ver las solicitudes y el apartado de 'Intruder', que permite modificar solicitudes HTTP con valores propios. Esto nos permite extraer y analizar todo el tráfico HTTP desde la página. De esta manera, se pueden obtener tanto las solicitudes, hash, correo, entre otras variables y usarlas para probar la funcionalidad del hash.
+
+El primer paso es abrir BurpSuite e iniciar el navegador que este suite provee. Posteriormente, se navega hasta la página y se realizan 2 intentos de login, uno incorrecto, con la contraseña 'password' y uno correcto con la contraseña 'Contr@generica12345', todo esto mientras se captura el tráfico HTTP mediante el historial HTTP del software. Esto nos permite obtener 2 hash; 1 incorrecto y otro correcto, que se usarán posteriormente. Esto se puede apreciar en la Figura \ref{fig: trafico malo} y Figura \ref{fig:variables malas} con la contraseña errónea, y en la Figura \ref{fig:trafico bueno} y Figura \ref{fig:variables buenas} con la contraseña correcta.
+
+\begin{itemize}
+    \item Hash incorrecto de 'password': '5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8'
+    \item Hash correcto de actividades pasadas: '81b2e4f296ea6b696851199d4dd66eaa0abc6f5d'
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Actividad 4/trafico malo.jpg}
+    \caption{Tráfico interceptado mediante BurpSuite, donde se aprecia la ruta 'login' usada para el ingreso.}
+    \label{fig: trafico malo}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Actividad 4/variables malas.jpg}
+    \caption{Variables capturadas de la solicitud de login. Se aprecia el campo de correo sin cifrar y el campo de contraseña, con un hash distinto.}
+    \label{fig:variables malas}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Actividad 4/trafico bueno.jpg}
+    \caption{Tráfico interceptado mediante BurpSuite, donde se aprecia la ruta 'login' usada para el ingreso.}
+    \label{fig:trafico bueno}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Actividad 4/variables buenas.jpg}
+    \caption{Variables capturadas de la solicitud de login. Se aprecia el campo de correo sin cifrar y el campo de contraseña, con un hash que coincide con el de actividades previas.}
+    \label{fig:variables buenas}
+\end{figure}
+
+\subsection{Realiza el intento de login por medio del hash}
+Para realizar un intento de login mediante el hash, se modifica un intento de login correcto (ya capturado en el punto anterior) cambiando el hash de la contraseña por uno incorrecto (también capturado). También se realiza el opuesto, osea, un intento incorrecto se le cambia a un hash correcto. Esto se hace mediante la funcionalidad de 'Intruder' de BurpSuite.
+
+En primera instancia se realiza el cambio por un hash incorrecto. Para esto utilizamos el 'Intruder', el cual nos permite cambiar variables de la solicitud y enviar ataques al sitio con estos nuevos valores. En este caso se modifica el valor del hash correcto por uno incorrecto, resultando en una solicitud rechazada o 'Acces Denied' como respuesta, debido a que no se puede verificar la integridad de la contraseña. Esto se aprecia en Figura \ref{fig:campos correctos}, Figura \ref{fig:valor incorrecto} y Figura \ref{fig:Acces Denied}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Actividad 5/Campos correctos a modificar.jpg}
+    \caption{Variables capturadas de la solicitud de login. Se aprecia el campo de correo sin cifrar y el campo de contraseña, con un hash correcto a modificar.}
+    \label{fig:campos correctos}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Actividad 5/Valor incorrecto.jpg}
+    \caption{Variable con el valor del hash de la contraseña incorrecta capturada. Esta variable reemplazará el valor del hash correcto.}
+    \label{fig:valor incorrecto}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Actividad 5/Acces Denied.jpg}
+    \caption{Resultado del cambio del valor del hash. Se aprecia el mensaje de respuesta 'Acces Denied', junto con el hash incorrecto como payload.}
+    \label{fig:Acces Denied}
+\end{figure}
+
+Posteriormente se intenta modificar un hash incorrecto con uno correcto. El resultado es que la solicitud se procesa, y se logra acceder al sitio. Inlcuso se notifica que la contraseña no es lo suficientemente segura. Sin embargo, el ataque resultó exitoso, mostrando el resultado de modificar hash de solicitudes interceptadas. Se aprecia esto en las Figura 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Actividad 5/Campos incorrectos a modificar.jpg}
+    \caption{Variables capturadas de la solicitud de login. Se aprecia el campo de correo sin cifrar y el campo de contraseña, con un hash incorrecto a modificar.}
+    \label{fig:campos incorrectos}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Actividad 5/Valor correcto.jpg}
+    \caption{Variable con el valor del hash de la contraseña correcta capturada. Esta variable reemplazará el valor del hash incorrecto.}
+    \label{fig:valor correcto}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Actividad 5/Succes.jpg}
+    \caption{Resultado del cambio del valor del hash. Se aprecia el mensaje de respuesta 'success' en el estado de la solicitud, junto al token con el correo de la sesión.}
+    \label{fig:Acces Denied}
+\end{figure}
+
+\subsection{Identifica las políticas de privacidad o seguridad}
+Las políticas de privacidad se pueden encontrar al navegar al footer de la página, o en el enlace \href{https://www.moneycontrol.com/cdata/privacypolicy.php}{privacypolicy}. Estas son normas diseñadas para proteger la información, las credenciales (contraseñas, por ejemplo) y los sistemas frente a accesos no autorizados, pérdidas o vulneraciones. 
+
+Estas políticas establecen cómo manejar datos sensibles, incluyendo contraseñas, mediante medidas como cifrado, autenticación multifactor y almacenamiento seguro. La política del sitio 'moneycontrol' es una de recopilación y uso de datos personales y de autenticación, la protección técnica y organizativa frente a accesos no autorizados, los derechos de los usuarios sobre sus datos y procedimientos para asegurar la integridad y confidencialidad de contraseñas y OTP (One-Time Password).
+
+\subsection{Comente 4 conclusiones sobre la seguridad del sitio escogido}
+Como resultado del análisis y las pruebas realizadas, se concluye que el sitio no presenta un nivel de seguridad adecuado. En primer lugar, las solicitudes y respuestas no están completamente cifradas, lo que expone información sensible, como correos o credenciales, a posibles intercepciones. En segundo lugar, el código del sitio no se encuentra ofuscado, facilitando que un atacante pueda identificar funciones críticas o vulnerabilidades en el lado del cliente. Además, la ausencia de mecanismos robustos de autenticación y validación en el servidor incrementa el riesgo de ataques de tipo fuerza bruta o inyección. Finalmente, se recomienda implementar cifrado completo en las comunicaciones, ofuscación del código y mejores prácticas de protección de contraseñas para fortalecer la confidencialidad e integridad de los datos.
+
+\subsection{Conclusiones sobre la seguridad del sitio escogido}
+Como resultado del ataque realizado, se puede ver que las políticas de privacidad y las credenciales no son muy confidenciales ni seguras. Se podría mejorar la seguridad ofuscando las funciones y el código. También se podría cifrar tanto el correo como la solicitud completa (respuesta). Estas soluciones son factibles de aplicar, sin embargo, muchos sitios no optan por motivos económicos o de accesibilidad. Se concluye que el sitio 'moneycontrol' no es seguro y no se recomienda.
+
+
+\end{document}
